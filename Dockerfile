@@ -17,21 +17,29 @@ RUN C:\TEMP\vs_buildtools.exe --quiet --wait --norestart --nocache `
     --add Microsoft.VisualStudio.Workload.MSBuildTools `
     --add Microsoft.VisualStudio.Workload.NetCoreBuildTools `
     --add Microsoft.VisualStudio.Workload.VCTools `
+    --add Microsoft.VisualStudio.Component.VC.ATL `
+    --add Microsoft.VisualStudio.Component.VC.CLI.Support `
     --remove Microsoft.VisualStudio.Component.Windows10SDK.10240 `
     --remove Microsoft.VisualStudio.Component.Windows10SDK.10586 `
     --remove Microsoft.VisualStudio.Component.Windows10SDK.14393 `
     --remove Microsoft.VisualStudio.Component.Windows81SDK `
  || IF "%ERRORLEVEL%"=="3010" EXIT 0
 
-RUN C:\TEMP\vs_buildtools.exe modify --quiet --wait --norestart --nocache `
-    --includeRecommended `
-    --installPath C:\BuildTools `
-    --add Microsoft.VisualStudio.Component.VC.ATL `
-    --add Microsoft.VisualStudio.Component.VC.CLI.Support `
- || IF "%ERRORLEVEL%"=="3010" EXIT 0
+# Install chocolatey
+ADD https://chocolatey.org/install.ps1 C:\TEMP\chocolatey_install.ps1
 
-ADD https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.2/Git-2.29.2.2-64-bit.exe C:\TEMP\git_installer.exe
+RUN "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" `
+    -NoProfile `
+    -InputFormat None `
+    -ExecutionPolicy Bypass `
+    C:\TEMP\chocolatey_install.ps1
 
+RUN SETX PATH "%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+
+# Install chocolatey packages
+COPY chocolatey.config C:\TEMP\chocolatey.config
+RUN choco feature enable -n allowGlobalConfirmation
+RUN choco install C:\TEMP\chocolatey.config || TYPE C:\ProgramData\chocolatey\logs\chocolatey.log
 
 # Define the entry point for the docker container.
 # This entry point starts the developer command prompt and launches the PowerShell shell.
